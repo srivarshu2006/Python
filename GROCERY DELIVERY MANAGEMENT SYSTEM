@@ -1,0 +1,137 @@
+import hashlib
+
+# In-memory data storage
+users = {}
+products = {}
+orders = {}
+order_counter = 1
+
+# Utility functions
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(stored_password, provided_password):
+    return stored_password == hash_password(provided_password)
+
+# User management
+def register_user():
+    username = input("Enter username: ")
+    if username in users:
+        print("Username already exists!")
+        return
+    email = input("Enter email: ")
+    password = input("Enter password: ")
+    hashed_password = hash_password(password)
+    users[username] = {"email": email, "password": hashed_password}
+    print("User registered successfully!")
+
+def login_user():
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    if username not in users or not verify_password(users[username]['password'], password):
+        print("Invalid credentials!")
+        return None
+    print("Logged in successfully!")
+    return username
+
+# Product management
+def add_product():
+    product_id = input("Enter product ID: ")
+    if product_id in products:
+        print("Product ID already exists!")
+        return
+    name = input("Enter product name: ")
+    description = input("Enter product description: ")
+    price = float(input("Enter product price: "))
+    products[product_id] = {"name": name, "description": description, "price": price}
+    print("Product added successfully!")
+
+def list_products():
+    print("Products:")
+    for pid, pdata in products.items():
+        print(f"ID: {pid}, Name: {pdata['name']}, Description: {pdata['description']}, Price: ${pdata['price']}")
+
+# Order management
+def create_order(username):
+    global order_counter
+    items = []
+    while True:
+        product_id = input("Enter product ID to order (or 'done' to finish): ")
+        if product_id == 'done':
+            break
+        if product_id not in products:
+            print(f"Product ID {product_id} not found!")
+            continue
+        quantity = int(input("Enter quantity: "))
+        items.append({"product_id": product_id, "quantity": quantity})
+
+    if not items:
+        print("No items to order!")
+        return
+
+    total_amount = sum(products[item['product_id']]['price'] * item['quantity'] for item in items)
+    orders[order_counter] = {"user": username, "total_amount": total_amount, "items": items, "status": "Pending"}
+    print(f"Order placed successfully! Order ID: {order_counter}")
+    order_counter += 1
+    
+def list_orders():
+    print("Orders:")
+    for oid, odata in orders.items():
+        print(f"Order ID: {oid}, User: {odata['user']}, Total Amount: ${odata['total_amount']}, Status: {odata['status']}")
+        for item in odata['items']:
+            print(f"  Product ID: {item['product_id']}, Quantity: {item['quantity']}, Price: ${products[item['product_id']]['price']}")
+
+# Delivery management
+def update_order_status():
+    order_id = int(input("Enter order ID to update: "))
+    if order_id not in orders:
+        print(f"Order ID {order_id} not found!")
+        return
+    new_status = input("Enter new status (Pending/Delivered): ")
+    if new_status not in ["Pending", "Delivered"]:
+        print("Invalid status!")
+        return
+    orders[order_id]['status'] = new_status
+    print(f"Order status updated to {new_status}!")
+
+# Main function to demonstrate the system
+def main():
+    logged_in_user = None
+    while True:
+        print("\nMenu:")
+        print("1. Register User")
+        print("2. Login User")
+        print("3. Add Product")
+        print("4. List Products")
+        print("5. Create Order")
+        print("6. List Orders")
+        print("7. Update Order Status")
+        print("8. Exit")
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            register_user()
+        elif choice == '2':
+            logged_in_user = login_user()
+        elif choice == '3':
+            add_product()
+        elif choice == '4':
+            list_products()
+        elif choice == '5':
+            if not logged_in_user:
+                print("Please login first!")
+            else:
+                create_order(logged_in_user)
+        elif choice == '6':
+            list_orders()
+        elif choice == '7':
+            if not logged_in_user:
+                print("Please login first!")
+            else:
+                update_order_status()
+        elif choice == '8':
+            break
+        else:
+            print("Invalid choice, please try again.")
+if __name__ == "__main__":
+    main()
